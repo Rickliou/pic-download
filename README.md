@@ -41,11 +41,14 @@ python main.py <URL> [--output-dir DIR] [--headless/--no-headless] [--delay SECO
 ### 範例
 
 ```bash
-# 基本使用
+# 基本使用（預設儲存到 ./output）
 python main.py https://18comic.vip/photo/1223474
 
-# 指定輸出目錄
-python main.py https://18comic.vip/photo/1223474 -o ~/Downloads/comics
+# 指定輸出目錄到桌面
+python main.py https://18comic.vip/photo/1223474 -o ~/Desktop/my_comics
+
+# 指定輸出目錄到 Documents
+python main.py https://18comic.vip/photo/1223474 --output-dir ~/Documents/comics
 
 # 顯示瀏覽器視窗（除錯用）
 python main.py https://18comic.vip/photo/1223474 --no-headless
@@ -73,14 +76,35 @@ output/
 
 ## 批量下載整個相簿
 
+### 基本用法
+
 ```bash
+# 下載整個相簿（預設儲存到 ./output）
 python batch_download.py "https://18comic.vip/album/1223474/"
+
+# 指定輸出目錄
+python batch_download.py "https://18comic.vip/album/1223474/" -o ~/Desktop/my_comics
 
 # 只下載第 10~20 話
 python batch_download.py "https://18comic.vip/album/1223474/" --start-from 10 --end-at 20
+
+# 指定輸出目錄並下載特定範圍
+python batch_download.py "https://18comic.vip/album/1223474/" -o ~/Documents/comics --start-from 5 --end-at 15
 ```
 
-輸出結構：
+### 完整參數
+
+| 參數 | 說明 | 預設值 |
+|------|------|--------|
+| `album_url` | 相簿頁面網址 | (必填) |
+| `--output-dir`, `-o` | 輸出目錄 | `./output` |
+| `--headless` | 無頭模式 | 開啟 |
+| `--delay` | 下載間隔秒數 | `0.3` |
+| `--start-from` | 從第幾話開始下載 | `1` |
+| `--end-at` | 下載到第幾話結束 | 全部 |
+
+### 輸出結構
+
 ```
 output/{相簿名稱}/
 ├── images/ep001_{id}/    # 原始圖片

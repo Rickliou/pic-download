@@ -6,6 +6,7 @@
 import random
 import re
 from dataclasses import dataclass
+from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright, Page, Browser
 import httpx
 
@@ -17,6 +18,19 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
 ]
+
+# 安全設定：允許的圖片域名白名單
+ALLOWED_DOMAINS = [
+    "cdn-msp.18comic.vip",
+    "cdn.18comic.vip",
+    "media.18comic.vip",
+    "cdn-msp2.18comic.vip",
+    "cdn-msp3.18comic.vip",
+    "cdn-msp4.18comic.vip"
+]
+
+# 最大圖片大小：50MB
+MAX_IMAGE_SIZE = 50 * 1024 * 1024
 
 
 @dataclass
@@ -38,6 +52,32 @@ class AlbumInfo:
 def get_random_user_agent() -> str:
     """取得隨機 User-Agent"""
     return random.choice(USER_AGENTS)
+
+
+def is_safe_url(url: str) -> bool:
+    """
+    驗證 URL 是否安全（白名單檢查）。
+    
+    Args:
+        url: 要檢查的 URL
+    
+    Returns:
+        bool: URL 是否安全
+    """
+    try:
+        parsed = urlparse(url)
+        
+        # 只允許 https 協議
+        if parsed.scheme != "https":
+            return False
+        
+        # 檢查域名是否在白名單中
+        if parsed.netloc not in ALLOWED_DOMAINS:
+            return False
+        
+        return True
+    except Exception:
+        return False
 
 
 def extract_aid_from_url(url: str) -> int:
@@ -190,7 +230,7 @@ def _extract_images(page: Page, aid: int) -> list[ImageInfo]:
 
 def download_image(url: str, referer: str = "https://18comic.vip/") -> bytes:
     """
-    下載圖片。
+    下載圖片（包含安全驗證）。
     
     Args:
         url: 圖片 URL
@@ -198,7 +238,14 @@ def download_image(url: str, referer: str = "https://18comic.vip/") -> bytes:
     
     Returns:
         bytes: 圖片二進位資料
+        
+    Raises:
+        ValueError: URL 不在白名單中或檔案過大
     """
+    # 安全檢查：驗證 URL 是否在白名單中
+    if not is_safe_url(url):
+        raise ValueError(f"不安全的 URL（不在白名單中）: {url}")
+    
     headers = {
         "User-Agent": get_random_user_agent(),
         "Referer": referer,
@@ -206,6 +253,20 @@ def download_image(url: str, referer: str = "https://18comic.vip/") -> bytes:
     }
     
     with httpx.Client(follow_redirects=True, timeout=30.0) as client:
-        response = client.get(url, headers=headers)
-        response.raise_for_status()
-        return response.content
+        # 使用串流模式以檢查檔案大小
+        with client.stream("GET", url, headers=headers) as response:
+            response.raise_for_status()
+            
+            # 檢查 Content-Length header
+            content_length = response.headers.get("content-length")
+            if content_length and int(content_length) > MAX_IMAGE_SIZE:
+                raise ValueError(f"檔案過大: {content_length} bytes (最大: {MAX_IMAGE_SIZE} bytes)")
+            
+            # 分段讀取並限制總大小
+            data = b""
+            for chunk in response.iter_bytes(chunk_size=8192):
+                data += chunk
+                if len(data) > MAX_IMAGE_SIZE:
+                    raise ValueError(f"檔案大小超過限制 (最大: {MAX_IMAGE_SIZE} bytes)")
+            
+            return data

@@ -18,6 +18,32 @@ from scraper import get_random_user_agent, download_image, _scroll_page
 from to_pdf import images_to_pdf
 
 
+def sanitize_filename(name: str) -> str:
+    """
+    清理檔名/目錄名稱，防止路徑遍歷攻擊。
+    
+    Args:
+        name: 原始名稱
+    
+    Returns:
+        str: 清理後的安全名稱
+    """
+    # 移除路徑遍歷符號
+    name = name.replace('..', '')
+    # 移除所有斜線
+    name = name.replace('/', '_').replace('\\', '_')
+    # 移除特殊字元
+    name = re.sub(r'[<>:"|?*]', '_', name)
+    # 移除開頭的點和空格
+    name = name.lstrip('. ')
+    # 移除結尾的點和空格
+    name = name.rstrip('. ')
+    # 限制長度
+    name = name[:200] if name else "untitled"
+    # 如果清理後為空，返回預設值
+    return name if name else "untitled"
+
+
 @dataclass
 class ChapterInfo:
     """章節資訊"""
@@ -241,8 +267,8 @@ def main():
             sys.exit(1)
         
         # 建立相簿目錄
-        # 清理標題中的特殊字元
-        safe_title = re.sub(r'[<>:"/\\|?*]', '_', album_title)
+        # 清理標題中的特殊字元（防止路徑遍歷攻擊）
+        safe_title = sanitize_filename(album_title)
         album_dir = output_dir / safe_title
         album_dir.mkdir(exist_ok=True)
         
