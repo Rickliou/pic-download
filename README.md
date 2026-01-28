@@ -211,3 +211,33 @@ Remainder = H % N
 ```
 
 從原圖底部往上取出 N 段，依序放到新圖頂部往下。
+
+## 開發與交接資訊
+
+### 快速啟動 (Startup Commands)
+
+若需重新設定開發環境，請依序執行以下指令：
+
+```bash
+# 1. 建立並啟用虛擬環境
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 2. 安裝 Python 依賴
+pip install -r requirements.txt
+
+# 3. 安裝 Playwright 瀏覽器核心
+python -m playwright install chromium
+
+# 4. 執行測試 (下載範例)
+python main.py https://18comic.vip/photo/1223474
+```
+
+### 環境變數 (Environment Variables)
+
+目前專案運作不需要設定環境變數。已建立 `.env.example` 作為範本（目前為空）。
+
+### 硬體接線與通訊 (Hardware & Communication)
+
+- **硬體需求**: 本專案為純軟體爬蟲，無連接實體硬體需求。
+- **通訊協議**: 使用 HTTP/HTTPS 協議與網站溝通。
