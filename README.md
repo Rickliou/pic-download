@@ -83,7 +83,7 @@ output/
 python batch_download.py "https://18comic.vip/album/1223474/"
 
 # 指定輸出目錄
-python batch_download.py "https://18comic.vip/album/1223474/" -o ~/Desktop/my_comics
+python batch_download.py "https://18comic.vip/album/1223474/" -o /Volumes/TR_004/
 
 # 只下載第 10~20 話
 python batch_download.py "https://18comic.vip/album/1223474/" --start-from 10 --end-at 20
@@ -121,6 +121,83 @@ python to_pdf.py ./output/{相簿ID}
 
 # 指定輸出路徑
 python to_pdf.py ./output/1223474 -o ~/Documents/comic.pdf
+```
+
+## 遠端運行與後台任務
+
+### 使用 tmux 保持程式運行
+
+當需要透過 SSH/VPN 遠端執行長時間任務時，使用 tmux 可以讓程式在斷線後繼續執行。
+
+#### 安裝 tmux
+
+```bash
+# macOS
+brew install tmux
+
+# Linux (遠端伺服器)
+sudo apt-get install tmux
+```
+
+#### 基本使用流程
+
+1. **創建 tmux session**
+   ```bash
+   tmux new -s download
+   ```
+
+2. **在 tmux 中執行下載程式**
+   ```bash
+   python batch_download.py "https://18comic.vip/album/1223474/"
+   ```
+
+3. **分離 session（讓程式在背景執行）**
+   - 按 `Ctrl + B`
+   - 放開兩個鍵
+   - 按 `D`
+   
+   成功時會顯示：`[detached (from session download)]`
+
+4. **現在可以安全地關閉視窗或斷開連線**
+   - 程式會繼續在遠端執行
+   - 可以關閉 terminal 視窗
+   - 可以斷開 VPN 連線
+
+5. **重新連線查看進度**
+   ```bash
+   # 列出所有 sessions
+   tmux ls
+   
+   # 重新連接到指定 session
+   tmux attach -t download
+   ```
+
+#### 常用快捷鍵
+
+| 快捷鍵 | 功能 |
+|--------|------|
+| `Ctrl + B` → `D` | 分離 session |
+| `Ctrl + B` → `C` | 創建新視窗 |
+| `Ctrl + B` → `W` | 列出所有視窗 |
+| `Ctrl + B` → `0-9` | 切換到指定視窗 |
+| `Ctrl + B` → `%` | 垂直分割視窗 |
+| `Ctrl + B` → `"` | 水平分割視窗 |
+
+注意：macOS 上也是使用 `Ctrl` 鍵，不是 `Command` 鍵。
+
+#### 其他後台執行方式
+
+如果不想使用 tmux，也可以使用 `nohup`：
+
+```bash
+# 基本用法
+nohup python batch_download.py "URL" &
+
+# 將輸出記錄到檔案
+nohup python batch_download.py "URL" > download.log 2>&1 &
+
+# 查看背景程序
+ps aux | grep python
 ```
 
 ## 還原演算法
